@@ -15,6 +15,9 @@ POWER_CTL = 0x2D
 DATA_FORMAT = 0x31
 DATAX0 = 0x32
 
+# Glove mass constant
+GLOVE_MASS_KG = 0.244  # 8.6 oz converted to kg
+
 class ADXL375:
     def __init__(self, i2c, address=0x53):
         self.i2c = i2c
@@ -72,8 +75,12 @@ while True:
         # Read acceleration
         x, y, z = accel.read_accel()
         
-        # Calculate magnitude
-        mag = math.sqrt(x*x + y*y + z*z)
+        # Calculate magnitude in g's
+        mag_g = math.sqrt(x*x + y*y + z*z)
+        
+        # Convert to Newtons: F = m * a
+        # where a = mag_g * 9.81 m/s²
+        force_n = GLOVE_MASS_KG * mag_g * 9.81
         
         # Clear display
         oled.fill(0)
@@ -81,16 +88,19 @@ while True:
         # Display title at top
         oled.text("Magic8Watermelon", 0, 0)
         
-        # Display magnitude - large in center
-        oled.text("G-Force:", 20, 25)
-        oled.text("{:.1f} g".format(mag), 30, 40)
+        # Display both g-force and Newtons
+        oled.text("G-Force:", 10, 20)
+        oled.text("{:.1f} g".format(mag_g), 20, 32)
+        
+        oled.text("Force:", 10, 45)
+        oled.text("{:.2f} N".format(force_n), 20, 57)
         
         oled.show()
         
         # Print to console
-        print("Magnitude: {:.1f} g".format(mag))
+        print("G-Force: {:.1f} g | Force: {:.2f} N".format(mag_g, force_n))
         
-        time.sleep_ms(1500)  # Update every 1.5 seconds
+        time.sleep_ms(1000)  # Update every 1.5 seconds
         
     except KeyboardInterrupt:
         print("Stopped by user")
